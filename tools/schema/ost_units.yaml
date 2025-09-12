@@ -1,0 +1,112 @@
+# ==========================================
+# Schema: ost_units
+# Type: base
+# Description: Operational service table for units
+# Created: 2025-06-06 06:11:31.976Z
+# Updated: 2025-07-25 10:23:17.765Z
+# Extracted: 2025-08-11T11:29:53.186775
+# ==========================================
+
+table: ost_units
+description: "Operational service table for units"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: description
+    type: text
+    description: "Descriptive text field"
+
+  - name: isActive
+    type: integer
+    description: "Boolean flag field"
+
+  - name: managerId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Audit trail fields
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_ost_units_created_by

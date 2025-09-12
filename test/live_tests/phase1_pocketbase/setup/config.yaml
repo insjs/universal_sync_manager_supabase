@@ -1,0 +1,94 @@
+# Phase 1 PocketBase Live Testing Configuration
+
+# PocketBase backend configuration
+pocketbase:
+  url: "http://localhost:8090"
+  admin_email: "xinzqr@gmail.com"
+  admin_password: "12345678"
+  # Regular user credentials for USM sync operations
+  user_email: "a@has.com"
+  user_password: "12345678"
+  collection_name: "usm_test"
+  timeout_seconds: 30
+
+# Test schemas to set up in PocketBase
+test_schemas:
+  - "usm_test.yaml"
+  - "ost_managed_users_test_simple.yaml"
+  - "audit_items.yaml"
+  
+# Local SQLite database configuration
+database:
+  path: "./usmtest.db"
+  reset_on_start: true
+  enable_wal_mode: true
+  enable_foreign_keys: true
+  
+# Universal Sync Manager configuration
+sync:
+  project_id: "usm_live_test"
+  backend_type: "pocketbase"
+  sync_mode: "manual"  # manual, automatic, hybrid
+  batch_size: 25
+  retry_attempts: 3
+  conflict_strategy: "serverWins"  # localWins, serverWins, timestampWins, manualResolution
+  
+# Test execution parameters
+testing:
+  record_count: 100
+  batch_size: 25
+  timeout_seconds: 30
+  max_execution_time_minutes: 10
+  enable_logging: true
+  log_level: "debug"  # debug, info, warning, error
+  generate_reports: true
+  cleanup_after_tests: false
+  
+# Test data generation
+data_generation:
+  organization_ids: ["org_001", "org_002", "org_003"]
+  user_ids: ["user_001", "user_002", "user_003", "user_004"]
+  test_categories: ["sync", "conflict", "performance", "edge_case"]
+  priority_range: [1, 10]
+  completion_range: [0.0, 1.0]
+  enable_random_data: true
+  seed: 12345  # For reproducible test data
+  
+# Performance testing parameters
+performance:
+  small_dataset: 50
+  medium_dataset: 500
+  large_dataset: 2000
+  stress_test_dataset: 10000
+  concurrent_operations: 5
+  memory_monitoring: true
+  network_simulation: false
+  
+# Conflict resolution testing
+conflicts:
+  enable_deliberate_conflicts: true
+  conflict_percentage: 10  # Percentage of records to create conflicts for
+  conflict_types: ["field_update", "concurrent_update", "delete_vs_update"]
+  resolution_timeout_seconds: 60
+  
+# Reporting and validation
+reporting:
+  output_directory: "./test_results"
+  generate_html_report: true
+  generate_json_report: true
+  include_performance_charts: true
+  include_error_details: true
+  
+# Network simulation (for testing resilience)
+network:
+  simulate_conditions: false
+  latency_ms: 0
+  packet_loss_percentage: 0
+  bandwidth_limit_kbps: 0
+  
+# Error injection (for testing error handling)
+error_injection:
+  enable: false
+  random_failure_rate: 0.05  # 5% chance of random failures
+  network_failure_rate: 0.02  # 2% chance of network failures
+  data_corruption_rate: 0.01  # 1% chance of data corruption

@@ -1,0 +1,124 @@
+# ==========================================
+# Schema: app_asset_files
+# Type: base
+# Description: Application data table for asset files
+# Created: 2025-08-01 07:27:17.666Z
+# Updated: 2025-08-08 07:50:02.067Z
+# Extracted: 2025-08-11T11:29:53.194776
+# ==========================================
+
+table: app_asset_files
+description: "Application data table for asset files"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: title
+    type: text
+    description: "Text field"
+
+  - name: description
+    type: text
+    description: "Descriptive text field"
+
+  - name: fileName
+    type: text
+    description: "Name or title field (required)"
+    required: true
+
+  - name: originalFileName
+    type: text
+    description: "Name or title field (required)"
+    required: true
+
+  - name: fileSize
+    type: integer
+    description: "Numeric field"
+
+  - name: mimeType
+    type: text
+    description: "Text field"
+
+  - name: fileHash
+    type: text
+    description: "Text field"
+
+  - name: remoteUrl
+    type: text
+    description: "Text field"
+
+  - name: storageProvider
+    type: text
+    description: "Text field"
+
+  - name: fileType
+    type: text
+    description: "Text field"
+
+  - name: tags
+    type: text
+    description: "Text field"
+
+  - name: fileContent
+    type: text
+    description: "File upload field (max: 1) (required)"
+    required: true
+    fileOptions:
+      maxSelect: 1
+      maxSize: 5242880
+
+
+  # Audit trail fields
+  - name: updatedBy
+    type: text
+    description: "Text field"
+
+  - name: createdBy
+    type: text
+    description: "Text field"
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_app_asset_files_created_by

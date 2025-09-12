@@ -1,0 +1,36 @@
+# ==========================================
+# Schema: cfg_ui_translation_keys
+# Type: base
+# Description: Configuration table for ui translation keys
+# Created: 2025-03-06 02:41:22.684Z
+# Updated: 2025-04-27 06:24:52.808Z
+# Extracted: 2025-08-11T11:29:53.173774
+# ==========================================
+
+table: cfg_ui_translation_keys
+description: "Configuration table for ui translation keys"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: key
+    type: text
+    description: "Key or identifier field (required)"
+    required: true
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

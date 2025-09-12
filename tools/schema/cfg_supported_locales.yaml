@@ -1,0 +1,41 @@
+# ==========================================
+# Schema: cfg_supported_locales
+# Type: base
+# Description: Configuration table for supported locales
+# Created: 2025-02-27 07:15:53.695Z
+# Updated: 2025-04-27 06:51:07.915Z
+# Extracted: 2025-08-11T11:29:53.165798
+# ==========================================
+
+table: cfg_supported_locales
+description: "Configuration table for supported locales"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: locale_code
+    type: text
+    description: "Code or identifier field (required)"
+    required: true
+
+  - name: display_name
+    type: text
+    description: "Name or title field (required)"
+    required: true
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

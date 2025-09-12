@@ -1,0 +1,36 @@
+name: universal_sync_manager_example
+description: Example app demonstrating Universal Sync Manager usage.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.2
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  sqflite: ^2.3.0
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  flutter_timezone: ^4.1.1
+  sqlite3_flutter_libs: ^0.5.31  # Required for Windows SQLite support
+  sqflite_common_ffi: ^2.3.0  # Required for Windows/Linux/macOS desktop SQLite support
+  cryptography: ^2.7.0  # Future-proofing for encryption
+  logging: ^1.3.0
+  uuid: ^4.2.2
+  http: ^1.2.0
+  supabase_flutter: ^2.5.6  # Added for Supabase integration testing
+  
+  # Use the local USM package
+  universal_sync_manager:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

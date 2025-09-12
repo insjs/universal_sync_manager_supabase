@@ -1,0 +1,90 @@
+# ==========================================
+# Schema: cfg_tree_view_settings
+# Type: base
+# Description: Configuration table for tree view settings
+# Created: 2025-04-02 08:30:28.923Z
+# Updated: 2025-04-27 07:35:54.580Z
+# Extracted: 2025-08-11T11:29:53.180776
+# ==========================================
+
+table: cfg_tree_view_settings
+description: "Configuration table for tree view settings"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: navSection
+    type: text
+    description: "Text field (required)"
+    required: true
+
+  - name: canAddItems
+    type: integer
+    description: "Boolean flag field"
+
+  - name: canAddGroups
+    type: integer
+    description: "Boolean flag field"
+
+  - name: canSort
+    type: integer
+    description: "Boolean flag field"
+
+  - name: canSearch
+    type: integer
+    description: "Boolean flag field"
+
+  - name: canCollapse
+    type: integer
+    description: "Boolean flag field"
+
+  - name: defaultExpanded
+    type: integer
+    description: "Boolean flag field"
+
+  - name: maxDepth
+    type: integer
+    description: "Numeric field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    description: "Text field"
+
+  - name: updatedBy
+    type: text
+    description: "Text field"
+
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_cfg_tree_view_settings_created_by

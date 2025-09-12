@@ -1,0 +1,65 @@
+table: audit_items
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    required: true
+
+  # Business logic fields
+  - name: question
+    type: text
+
+  - name: responseType
+    type: text
+
+  - name: isActive
+    type: integer
+    default: 1
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    required: true
+
+  - name: updatedBy
+    type: text
+    required: true
+
+  - name: createdAt
+    type: text
+
+  - name: updatedAt
+    type: text
+
+  - name: deletedAt
+    type: text
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+
+  - name: isDirty
+    type: integer
+    default: 1
+
+  - name: syncVersion
+    type: integer
+    default: 0
+
+  - name: isDeleted
+    type: integer
+    default: 0
+
+# Optional: Indexes for performance
+indexes:
+  - fields: [organizationId]
+    name: idx_audit_items_org
+  - fields: [createdBy]
+    name: idx_audit_items_created_by
+  - fields: [isActive, isDeleted]
+    name: idx_audit_items_active

@@ -1,0 +1,136 @@
+table: usm_test
+description: "Universal Sync Manager live testing table with comprehensive field types"
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier (UUID format)"
+    
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    required: true
+    description: "Organization identifier for multi-tenancy"
+    
+  # Test data fields covering various data types
+  - name: testName
+    type: text
+    required: true
+    description: "Human-readable test name"
+    
+  - name: testDescription
+    type: text
+    description: "Detailed description of the test case"
+    
+  - name: testCategory
+    type: text
+    description: "Category: 'sync', 'conflict', 'performance', 'edge_case'"
+    
+  - name: isActive
+    type: integer
+    default: 1
+    description: "Active status (1=active, 0=inactive)"
+    
+  - name: priority
+    type: integer
+    default: 5
+    description: "Priority level (1-10, higher = more important)"
+    
+  - name: completionPercentage
+    type: real
+    default: 0.0
+    description: "Completion percentage (0.0 to 1.0)"
+    
+  - name: testData
+    type: text
+    description: "JSON-encoded test data payload"
+    
+  - name: tags
+    type: text
+    description: "JSON array of tags for categorization"
+    
+  - name: executionTime
+    type: real
+    description: "Test execution time in milliseconds"
+    
+  - name: lastResult
+    type: text
+    description: "Last test result: 'passed', 'failed', 'skipped'"
+    
+  - name: errorMessage
+    type: text
+    description: "Error message if test failed"
+    
+  - name: config
+    type: text
+    description: "JSON configuration object for test parameters"
+    
+  # Audit trail fields (required for USM)
+  - name: createdBy
+    type: text
+    required: true
+    description: "User ID who created this record"
+    
+  - name: updatedBy
+    type: text
+    required: true
+    description: "User ID who last updated this record"
+    
+  - name: createdAt
+    type: text
+    description: "ISO timestamp when record was created"
+    
+  - name: updatedAt
+    type: text
+    description: "ISO timestamp of last modification"
+    
+  - name: deletedAt
+    type: text
+    description: "ISO timestamp when record was deleted (soft delete)"
+    
+  # Sync metadata fields (required for USM)
+  - name: lastSyncedAt
+    type: text
+    description: "Last successful sync timestamp (ISO format)"
+    
+  - name: isDirty
+    type: integer
+    default: 1
+    description: "Pending sync flag (1=needs sync, 0=synced)"
+    
+  - name: syncVersion
+    type: integer
+    default: 0
+    description: "Incremental sync version number"
+    
+  - name: isDeleted
+    type: integer
+    default: 0
+    description: "Soft delete flag (1=deleted, 0=active)"
+
+# Indexes for performance optimization
+indexes:
+  - fields: [organizationId]
+    name: idx_usm_test_org_id
+    
+  - fields: [testCategory, isActive]
+    name: idx_usm_test_category_active
+    
+  - fields: [isDirty, isDeleted]
+    name: idx_usm_test_sync_status
+    
+  - fields: [createdAt]
+    name: idx_usm_test_created
+    
+  - fields: [updatedAt]
+    name: idx_usm_test_updated
+
+# Test data generation rules
+test_data:
+  sample_count: 50
+  categories: ["sync", "conflict", "performance", "edge_case"]
+  priorities: [1, 3, 5, 7, 10]
+  completion_range: [0.0, 1.0]
+  results: ["passed", "failed", "skipped", null]

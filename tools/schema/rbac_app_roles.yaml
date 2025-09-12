@@ -1,0 +1,39 @@
+# ==========================================
+# Schema: rbac_app_roles
+# Type: base
+# Description: Role-based access control table for app roles
+# Created: 2025-02-28 09:24:35.048Z
+# Updated: 2025-04-27 08:22:39.231Z
+# Extracted: 2025-08-11T11:29:53.169782
+# ==========================================
+
+table: rbac_app_roles
+description: "Role-based access control table for app roles"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: rolename
+    type: text
+    description: "Name or title field"
+
+  - name: feature
+    type: text
+    description: "JSON data field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

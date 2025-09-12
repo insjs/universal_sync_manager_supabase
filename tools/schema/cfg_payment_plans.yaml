@@ -1,0 +1,43 @@
+# ==========================================
+# Schema: cfg_payment_plans
+# Type: base
+# Description: Configuration table for payment plans
+# Created: 2025-02-28 08:46:20.673Z
+# Updated: 2025-04-27 08:46:49.192Z
+# Extracted: 2025-08-11T11:29:53.167772
+# ==========================================
+
+table: cfg_payment_plans
+description: "Configuration table for payment plans"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: feature
+    type: text
+    description: "JSON data field"
+
+  - name: validUntil
+    type: text
+    description: "Date/time field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

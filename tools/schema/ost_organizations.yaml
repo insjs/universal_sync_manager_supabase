@@ -1,0 +1,137 @@
+# ==========================================
+# Schema: ost_organizations
+# Type: base
+# Description: Operational service table for organizations
+# Created: 2025-02-25 02:04:25.644Z
+# Updated: 2025-08-04 09:42:11.036Z
+# Extracted: 2025-08-11T11:29:53.158044
+# ==========================================
+
+table: ost_organizations
+description: "Operational service table for organizations"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: description
+    type: text
+    description: "Descriptive text field"
+
+  - name: avatarUrl
+    type: text
+    description: "File upload field (max: 1)"
+    fileOptions:
+      maxSelect: 1
+      maxSize: 5242880
+
+  - name: deletedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: createdIP
+    type: text
+    description: "Text field"
+
+  - name: updatedIP
+    type: text
+    description: "Text field"
+
+  - name: userAgent
+    type: text
+    description: "Text field"
+
+  - name: sessionID
+    type: text
+    description: "Text field"
+
+  - name: requestID
+    type: text
+    description: "Text field"
+
+  - name: geoLocation
+    type: text
+    description: "Text field"
+
+  - name: region
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: planId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Audit trail fields
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_ost_organizations_created_by

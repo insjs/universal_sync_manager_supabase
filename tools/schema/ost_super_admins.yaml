@@ -1,0 +1,85 @@
+# ==========================================
+# Schema: ost_super_admins
+# Type: auth
+# Description: Operational service table for super admins
+# Created: 2025-02-24 05:45:27.466Z
+# Updated: 2025-04-27 03:50:55.494Z
+# Extracted: 2025-08-11T11:29:53.139001
+# ==========================================
+
+table: ost_super_admins
+description: "Operational service table for super admins"
+type: auth
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: password
+    type: text
+    description: "Password field (required)"
+    required: true
+
+  - name: tokenKey
+    type: text
+    description: "Key or identifier field (required)"
+    required: true
+
+  - name: email
+    type: text
+    description: "Email address field with validation (required)"
+    required: true
+
+  - name: emailVisibility
+    type: integer
+    description: "Boolean flag field"
+
+  - name: verified
+    type: integer
+    description: "Boolean flag field"
+
+  - name: avatar
+    type: text
+    description: "File upload field (max: 1)"
+    fileOptions:
+      maxSelect: 1
+      maxSize: 5242880
+
+  - name: organization
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: role
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

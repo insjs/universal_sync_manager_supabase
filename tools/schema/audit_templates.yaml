@@ -1,0 +1,78 @@
+table: audit_templates
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    required: true
+
+  # Template information
+  - name: name
+    type: text
+    required: true
+
+  - name: description
+    type: text
+
+  - name: category
+    type: text
+
+  - name: templateData
+    type: json
+
+  - name: isActive
+    type: integer
+    default: 1
+
+  - name: version
+    type: integer
+    default: 1
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    required: true
+
+  - name: updatedBy
+    type: text
+    required: true
+
+  - name: createdAt
+    type: text
+
+  - name: updatedAt
+    type: text
+
+  - name: deletedAt
+    type: text
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+
+  - name: isDirty
+    type: integer
+    default: 1
+
+  - name: syncVersion
+    type: integer
+    default: 0
+
+  - name: isDeleted
+    type: integer
+    default: 0
+
+# Indexes for performance
+indexes:
+  - fields: [organizationId]
+    name: idx_audit_templates_org
+  - fields: [organizationId, isActive]
+    name: idx_audit_templates_org_active
+  - fields: [category]
+    name: idx_audit_templates_category
+  - fields: [createdBy]
+    name: idx_audit_templates_created_by

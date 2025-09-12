@@ -1,0 +1,39 @@
+# ==========================================
+# Schema: cfg_served_regions
+# Type: base
+# Description: Configuration table for served regions
+# Created: 2025-02-27 03:04:31.060Z
+# Updated: 2025-04-27 08:46:25.412Z
+# Extracted: 2025-08-11T11:29:53.160044
+# ==========================================
+
+table: cfg_served_regions
+description: "Configuration table for served regions"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: regionCode
+    type: text
+    description: "Code or identifier field"
+
+  - name: apiUrl
+    type: text
+    description: "Text field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

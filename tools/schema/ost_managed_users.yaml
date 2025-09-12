@@ -1,0 +1,164 @@
+# ==========================================
+# Schema: ost_managed_users
+# Type: auth
+# Description: Operational service table for managed users
+# Created: 2025-02-25 01:21:18.319Z
+# Updated: 2025-07-25 08:41:45.551Z
+# Extracted: 2025-08-11T11:29:53.155057
+# ==========================================
+
+table: ost_managed_users
+description: "Operational service table for managed users"
+type: auth
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: isActive
+    type: integer
+    description: "Boolean flag field"
+
+  - name: password
+    type: text
+    description: "Password field (required)"
+    required: true
+
+  - name: tokenKey
+    type: text
+    description: "Key or identifier field (required)"
+    required: true
+
+  - name: email
+    type: text
+    description: "Email address field with validation (required)"
+    required: true
+
+  - name: emailVisibility
+    type: integer
+    description: "Boolean flag field (required)"
+    required: true
+
+  - name: verified
+    type: integer
+    description: "Boolean flag field"
+
+  - name: organization
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: role
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: userName
+    type: text
+    description: "Name or title field"
+
+  - name: organizationUnits
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: organizationGroups
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: organizationRoles
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Audit trail fields
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_ost_managed_users_created_by

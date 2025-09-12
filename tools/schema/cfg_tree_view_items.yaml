@@ -1,0 +1,95 @@
+# ==========================================
+# Schema: cfg_tree_view_items
+# Type: base
+# Description: Configuration table for tree view items
+# Created: 2025-04-02 08:25:58.581Z
+# Updated: 2025-04-27 06:56:29.936Z
+# Extracted: 2025-08-11T11:29:53.177779
+# ==========================================
+
+table: cfg_tree_view_items
+description: "Configuration table for tree view items"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: navSection
+    type: text
+    description: "Text field (required)"
+    required: true
+
+  - name: label
+    type: text
+    description: "Text field (required)"
+    required: true
+
+  - name: parentId
+    type: text
+    description: "Text field"
+
+  - name: isDefault
+    type: integer
+    description: "Boolean flag field"
+
+  - name: icon
+    type: text
+    description: "Text field"
+
+  - name: url
+    type: text
+    description: "Text field"
+
+  - name: order
+    type: integer
+    description: "Numeric field"
+
+  - name: isFolder
+    type: integer
+    description: "Boolean flag field"
+
+  - name: isVisible
+    type: integer
+    description: "Boolean flag field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    description: "Text field"
+
+  - name: updatedBy
+    type: text
+    description: "Text field"
+
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_cfg_tree_view_items_created_by

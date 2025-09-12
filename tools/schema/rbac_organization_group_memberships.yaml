@@ -1,0 +1,122 @@
+# ==========================================
+# Schema: rbac_organization_group_memberships
+# Type: base
+# Description: Role-based access control table for organization group memberships
+# Created: 2025-06-13 06:17:45.370Z
+# Updated: 2025-07-29 01:55:17.866Z
+# Extracted: 2025-08-11T11:29:53.192775
+# ==========================================
+
+table: rbac_organization_group_memberships
+description: "Role-based access control table for organization group memberships"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: groupId
+    type: text
+    description: "Relationship field (single selection) (required)"
+    required: true
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: memberId
+    type: text
+    description: "Text field (required)"
+    required: true
+
+  - name: memberType
+    type: text
+    description: "Selection field with options:  (required)"
+    required: true
+    options:
+      values: []
+      maxSelect: 1
+
+  - name: addedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: organization
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_rbac_organization_group_memberships_created_by

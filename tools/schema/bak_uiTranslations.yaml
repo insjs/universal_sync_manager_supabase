@@ -1,0 +1,56 @@
+# ==========================================
+# Schema: bak_uiTranslations
+# Type: base
+# Description: Backup/archive table for uiTranslations
+# Created: 2025-02-27 06:20:10.578Z
+# Updated: 2025-04-27 07:45:02.622Z
+# Extracted: 2025-08-11T11:29:53.163050
+# ==========================================
+
+table: bak_uiTranslations
+description: "Backup/archive table for uiTranslations"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: Key
+    type: text
+    description: "Key or identifier field (required)"
+    required: true
+
+  - name: en_US
+    type: text
+    description: "Text field"
+
+  - name: fr_FR
+    type: text
+    description: "Text field"
+
+  - name: es_ES
+    type: text
+    description: "Text field"
+
+  - name: it_IT
+    type: text
+    description: "Text field"
+
+  - name: de_DE
+    type: text
+    description: "Text field"
+
+  - name: created
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updated
+    type: text
+    description: "Automatic update timestamp"
+
+

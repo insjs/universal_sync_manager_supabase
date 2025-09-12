@@ -1,0 +1,13 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "usm_test",
+            "group": "usm_test",
+            "database": "${workspaceFolder:universal_sync_manager}/test/live_tests/phase1_pocketbase/setup/usmtest.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true,
+    "chat.agent.maxRequests": 100
+}

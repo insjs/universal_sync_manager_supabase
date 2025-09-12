@@ -1,0 +1,100 @@
+# ==========================================
+# Schema: app_asset_file_references
+# Type: base
+# Description: Application data table for asset file references
+# Created: 2025-08-01 07:34:02.562Z
+# Updated: 2025-08-04 03:43:29.454Z
+# Extracted: 2025-08-11T11:29:53.196781
+# ==========================================
+
+table: app_asset_file_references
+description: "Application data table for asset file references"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: isActive
+    type: integer
+    description: "Boolean flag field"
+
+  - name: fileId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: entityTable
+    type: text
+    description: "Text field"
+
+  - name: entityId
+    type: text
+    description: "Text field"
+
+  - name: fieldName
+    type: text
+    description: "Name or title field"
+
+  - name: displayOrder
+    type: integer
+    description: "Numeric field"
+
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    description: "Text field"
+
+  - name: updatedBy
+    type: text
+    description: "Text field"
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_app_asset_file_references_created_by

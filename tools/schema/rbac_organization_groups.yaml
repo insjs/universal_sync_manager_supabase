@@ -1,0 +1,117 @@
+# ==========================================
+# Schema: rbac_organization_groups
+# Type: base
+# Description: Role-based access control table for organization groups
+# Created: 2025-06-06 06:11:56.009Z
+# Updated: 2025-07-29 07:06:41.844Z
+# Extracted: 2025-08-11T11:29:53.188771
+# ==========================================
+
+table: rbac_organization_groups
+description: "Role-based access control table for organization groups"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field"
+
+  - name: description
+    type: text
+    description: "Descriptive text field"
+
+  - name: isActive
+    type: integer
+    description: "Boolean flag field"
+
+  - name: groupType
+    type: text
+    description: "Selection field with options: "
+    options:
+      values: []
+      maxSelect: 1
+
+  - name: managerId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: organizations
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Audit trail fields
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_rbac_organization_groups_created_by

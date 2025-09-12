@@ -1,0 +1,151 @@
+# ==========================================
+# Schema: ost_organization_profiles
+# Type: base
+# Description: Operational service table for organization profiles
+# Created: 2025-04-28 03:41:42.127Z
+# Updated: 2025-08-07 06:06:43.786Z
+# Extracted: 2025-08-11T11:29:53.182774
+# ==========================================
+
+table: ost_organization_profiles
+description: "Operational service table for organization profiles"
+type: base
+
+fields:
+  # Primary identifier
+  - name: id
+    type: text
+    primaryKey: true
+    description: "Unique identifier for records in this table"
+    primaryKey: true
+
+  # Multi-tenant isolation
+  - name: organizationId
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+
+  # Business logic fields
+  - name: name
+    type: text
+    description: "Name or title field (required)"
+    required: true
+
+  - name: description
+    type: text
+    description: "Descriptive text field"
+
+  - name: isActive
+    type: integer
+    description: "Boolean flag field"
+
+  - name: avatarUrl
+    type: text
+    description: "Text field"
+
+  - name: addressLine1
+    type: text
+    description: "Text field"
+
+  - name: contactName
+    type: text
+    description: "Name or title field"
+
+  - name: contactEmail
+    type: text
+    description: "Email address field with validation"
+
+  - name: contactPhone
+    type: text
+    description: "Text field"
+
+  - name: addressLine2
+    type: text
+    description: "Text field"
+
+  - name: city
+    type: text
+    description: "Text field"
+
+  - name: state
+    type: text
+    description: "Text field"
+
+  - name: postalCode
+    type: text
+    description: "Code or identifier field"
+
+  - name: country
+    type: text
+    description: "Text field"
+
+  - name: website
+    type: text
+    description: "Text field"
+
+  - name: industry
+    type: text
+    description: "Text field"
+
+
+  # Audit trail fields
+  - name: createdBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: updatedBy
+    type: text
+    description: "Relationship field (single selection)"
+    relationship:
+      type: relation
+      collectionId: ""
+      maxSelect: 1
+      minSelect: 0
+      cascadeDelete: false
+
+  - name: deletedAt
+    type: text
+    description: "Date/time field"
+
+  - name: createdAt
+    type: text
+    description: "Automatic creation timestamp"
+
+  - name: updatedAt
+    type: text
+    description: "Automatic update timestamp"
+
+
+  # Sync metadata fields
+  - name: lastSyncedAt
+    type: text
+    description: "Date/time field"
+
+  - name: isDirty
+    type: integer
+    description: "Boolean flag field"
+
+  - name: syncVersion
+    type: integer
+    description: "Numeric field"
+
+  - name: isDeleted
+    type: integer
+    description: "Boolean flag field"
+
+# Suggested indexes for performance
+indexes:
+  - fields: [createdBy]
+    name: idx_ost_organization_profiles_created_by
