@@ -14,7 +14,14 @@ class TestActionButtons extends StatelessWidget {
   final VoidCallback? onCreateRemoteData;
   final VoidCallback? onTestLocalToRemote;
   final VoidCallback? onTestRemoteToLocal;
+  final VoidCallback? onTestBidirectionalSync;
   final VoidCallback? onTestEventSystem;
+  final VoidCallback? onTestFullEventIntegration;
+  final VoidCallback? onTestConflictResolution;
+  final VoidCallback? onTestTableConflicts;
+  final VoidCallback? onTestQueueOperations;
+  final VoidCallback? onTestAuthLifecycle;
+  final VoidCallback? onTestStateManagement;
   final VoidCallback? onClearResults;
 
   const TestActionButtons({
@@ -31,7 +38,14 @@ class TestActionButtons extends StatelessWidget {
     this.onCreateRemoteData,
     this.onTestLocalToRemote,
     this.onTestRemoteToLocal,
+    this.onTestBidirectionalSync,
     this.onTestEventSystem,
+    this.onTestFullEventIntegration,
+    this.onTestConflictResolution,
+    this.onTestTableConflicts,
+    this.onTestQueueOperations,
+    this.onTestAuthLifecycle,
+    this.onTestStateManagement,
     this.onClearResults,
   });
 
@@ -132,9 +146,44 @@ class TestActionButtons extends StatelessWidget {
                   backgroundColor: Colors.teal,
                 ),
                 _ActionButton(
-                  label: 'Test State',
+                  label: '🔄 Bidirectional',
+                  onPressed: onTestBidirectionalSync,
+                  backgroundColor: Colors.purple,
+                ),
+                _ActionButton(
+                  label: '📡 Event System',
                   onPressed: onTestEventSystem,
-                  backgroundColor: Colors.grey,
+                  backgroundColor: Colors.teal,
+                ),
+                _ActionButton(
+                  label: '🧪 Full Integration',
+                  onPressed: onTestFullEventIntegration,
+                  backgroundColor: Colors.deepPurple,
+                ),
+                _ActionButton(
+                  label: '⚔️ Conflict Resolution',
+                  onPressed: onTestConflictResolution,
+                  backgroundColor: Colors.red[700],
+                ),
+                _ActionButton(
+                  label: '📋 Table Conflicts',
+                  onPressed: onTestTableConflicts,
+                  backgroundColor: Colors.orange[700],
+                ),
+                _ActionButton(
+                  label: '🔄 Queue & Scheduling',
+                  onPressed: onTestQueueOperations,
+                  backgroundColor: Colors.teal[700],
+                ),
+                _ActionButton(
+                  label: '🔐 Auth Lifecycle',
+                  onPressed: onTestAuthLifecycle,
+                  backgroundColor: Colors.indigo[700],
+                ),
+                _ActionButton(
+                  label: '🔄 State Management',
+                  onPressed: onTestStateManagement,
+                  backgroundColor: Colors.purple[700],
                 ),
               ],
             ),

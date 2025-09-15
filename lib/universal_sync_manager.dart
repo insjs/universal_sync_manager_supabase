@@ -35,6 +35,9 @@ export 'src/config/usm_sync_enums.dart';
 // Core
 export 'src/core/usm_universal_sync_manager.dart';
 
+// Phase 3.1: App Integration Framework
+export 'src/integration/my_app_sync_manager.dart';
+
 // Phase 3.2: Popular Auth Provider Integration
 export 'src/integration/auth_providers/firebase_auth_integration.dart';
 export 'src/integration/auth_providers/supabase_auth_integration.dart';

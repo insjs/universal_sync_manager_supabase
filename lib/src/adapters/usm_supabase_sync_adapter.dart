@@ -98,30 +98,6 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
   @override
   bool get isConnected => _isConnected;
 
-  /// Converts camelCase field names to snake_case for Supabase database
-  String _mapFieldNameToDatabase(String fieldName) {
-    // Convert camelCase to snake_case
-    // organizationId -> organization_id
-    // createdBy -> created_by
-    // lastSyncedAt -> last_synced_at
-    return fieldName.replaceAllMapped(
-      RegExp(r'[A-Z]'),
-      (match) => '_${match.group(0)!.toLowerCase()}',
-    );
-  }
-
-  /// Converts snake_case field names to camelCase for USM framework
-  String _mapFieldNameFromDatabase(String fieldName) {
-    // Convert snake_case to camelCase
-    // organization_id -> organizationId
-    // created_by -> createdBy
-    // last_synced_at -> lastSyncedAt
-    return fieldName.replaceAllMapped(
-      RegExp(r'_([a-z])'),
-      (match) => match.group(1)!.toUpperCase(),
-    );
-  }
-
   @override
   SyncBackendCapabilities get capabilities =>
       SyncBackendCapabilities.supabase();
@@ -597,15 +573,13 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
       // Apply filters
       for (final entry in query.filters.entries) {
         final value = entry.value;
-        final dbFieldName = _mapFieldNameToDatabase(entry.key);
-        queryBuilder = queryBuilder.eq(dbFieldName, value);
+        queryBuilder = queryBuilder.eq(entry.key, value);
       }
 
       // Apply ordering
       for (final order in query.orderBy) {
-        final dbFieldName = _mapFieldNameToDatabase(order.field);
         queryBuilder = queryBuilder.order(
-          dbFieldName,
+          order.field,
           ascending: order.direction == SyncOrderDirection.ascending,
         );
       }
@@ -849,18 +823,12 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
   }
 
   Map<String, dynamic> _mapToBackendFormat(Map<String, dynamic> data) {
-    final mapped = <String, dynamic>{};
+    final mapped = Map<String, dynamic>.from(data);
 
-    // Convert field names from camelCase to snake_case and handle data types
-    for (final entry in data.entries) {
-      final dbFieldName = _mapFieldNameToDatabase(entry.key);
-      final value = entry.value;
-      
-      // Convert DateTime objects to ISO strings
-      if (value is DateTime) {
-        mapped[dbFieldName] = value.toIso8601String();
-      } else {
-        mapped[dbFieldName] = value;
+    // Convert DateTime objects to ISO strings
+    for (final entry in mapped.entries) {
+      if (entry.value is DateTime) {
+        mapped[entry.key] = (entry.value as DateTime).toIso8601String();
       }
     }
 
@@ -1092,25 +1060,17 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
       print('  ${entry.key}: ${entry.value} (${entry.value.runtimeType})');
     }
 
-    final mapped = <String, dynamic>{};
+    final mapped = Map<String, dynamic>.from(data);
 
     try {
-      print('🔧 DEBUG [_mapFromBackendFormat] - Processing field name conversion...');
-      
-      // Convert field names from snake_case to camelCase and handle data types
-      for (final entry in data.entries) {
-        final camelCaseFieldName = _mapFieldNameFromDatabase(entry.key);
-        mapped[camelCaseFieldName] = entry.value;
-      }
-
       print('🔧 DEBUG [_mapFromBackendFormat] - Processing UUID fields...');
       // NEW SCHEMA: All ID fields are now UUIDs, convert them to strings for consistency
       final uuidFields = [
         'id', // Now UUID primary key, not integer
-        'organizationId', // Note: now in camelCase after field name conversion
-        'createdBy',
-        'updatedBy',
-        'userId'
+        'organization_id',
+        'created_by',
+        'updated_by',
+        'user_id'
       ];
       for (final field in uuidFields) {
         if (mapped.containsKey(field) && mapped[field] != null) {
@@ -1124,8 +1084,8 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
 
       print('🔧 DEBUG [_mapFromBackendFormat] - Processing integer fields...');
       // CRITICAL: Preserve integer fields as integers (don't convert to string)
-      // syncVersion and priority should remain as integers per schema
-      final integerFields = ['syncVersion', 'priority']; // Note: now in camelCase
+      // sync_version and priority should remain as integers per schema
+      final integerFields = ['sync_version', 'priority'];
       for (final field in integerFields) {
         if (mapped.containsKey(field) && mapped[field] != null) {
           final value = mapped[field];
@@ -1147,8 +1107,13 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
 
       print(
           '🔧 DEBUG [_mapFromBackendFormat] - Processing timestamp fields...');
-      // Note: Timestamp fields are already converted to camelCase above
-      // createdAt, updatedAt fields should be preserved as-is
+      // Map Supabase timestamp fields to USM snake_case conventions
+      if (data.containsKey('created_at')) {
+        mapped['created_at'] = data['created_at'];
+      }
+      if (data.containsKey('updated_at')) {
+        mapped['updated_at'] = data['updated_at'];
+      }
 
       print('🔧 DEBUG [_mapFromBackendFormat] - Converting DateTime fields...');
       // Convert string dates to DateTime objects
@@ -1178,13 +1143,12 @@ class SupabaseSyncAdapter implements ISyncBackendAdapter {
 
   bool _isDateTimeField(String fieldName) {
     final dateTimeFields = {
-      'createdAt',
-      'updatedAt', 
-      'deletedAt',
-      'lastSyncedAt',
+      'created_at',
+      'updated_at',
+      'deleted_at',
+      'last_synced_at',
     };
     return dateTimeFields.contains(fieldName);
-  }
   }
 
   SyncError _mapPostgrestErrorToSyncError(PostgrestException e) {

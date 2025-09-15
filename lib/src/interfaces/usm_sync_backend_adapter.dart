@@ -1,21 +1,6 @@
 import '../models/usm_sync_backend_capabilities.dart';
-import '../models/usm_sync_backend_configuration.dart';  /// Creates a query for dirty records (pending sync)
-  factory SyncQuery.dirtyRecords({
-    String? organizationId,
-    List<SyncOrderBy> orderBy = const [],
-    int? limit,
-  }) {
-    final filters = <String, dynamic>{'is_dirty': 1};
-    if (organizationId != null) {
-      filters['organization_id'] = organizationId;
-    }
-
-    return SyncQuery(
-      filters: filters,
-      orderBy: orderBy,
-      limit: limit,
-    );
-  }s/usm_sync_result.dart';
+import '../models/usm_sync_backend_configuration.dart';
+import '../models/usm_sync_result.dart';
 import '../models/usm_sync_event.dart';
 
 /// Core interface for backend adapters in Universal Sync Manager
@@ -118,7 +103,7 @@ class SyncQuery {
     int? offset,
   }) {
     return SyncQuery(
-      filters: {'organization_id': organizationId, ...additionalFilters},
+      filters: {'organizationId': organizationId, ...additionalFilters},
       orderBy: orderBy,
       limit: limit,
       offset: offset,
@@ -133,7 +118,7 @@ class SyncQuery {
   }) {
     final filters = <String, dynamic>{'isDirty': 1};
     if (organizationId != null) {
-      filters['organization_id'] = organizationId;
+      filters['organizationId'] = organizationId;
     }
 
     return SyncQuery(
