@@ -22,6 +22,10 @@ class TestActionButtons extends StatelessWidget {
   final VoidCallback? onTestQueueOperations;
   final VoidCallback? onTestAuthLifecycle;
   final VoidCallback? onTestStateManagement;
+  final VoidCallback? onTestTokenManagement;
+  final VoidCallback? onTestNetworkConnection;
+  final VoidCallback? onTestDataIntegrity;
+  final VoidCallback? onTestPerformance;
   final VoidCallback? onClearResults;
 
   const TestActionButtons({
@@ -46,6 +50,10 @@ class TestActionButtons extends StatelessWidget {
     this.onTestQueueOperations,
     this.onTestAuthLifecycle,
     this.onTestStateManagement,
+    this.onTestTokenManagement,
+    this.onTestNetworkConnection,
+    this.onTestDataIntegrity,
+    this.onTestPerformance,
     this.onClearResults,
   });
 
@@ -184,6 +192,32 @@ class TestActionButtons extends StatelessWidget {
                   label: '🔄 State Management',
                   onPressed: onTestStateManagement,
                   backgroundColor: Colors.purple[700],
+                ),
+                _ActionButton(
+                  label: '🔐 Token Management',
+                  onPressed: onTestTokenManagement,
+                  backgroundColor: Colors.green[700],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              'Phase 5: Edge Cases & Performance',
+              [
+                _ActionButton(
+                  label: '🌐 Network Connection',
+                  onPressed: onTestNetworkConnection,
+                  backgroundColor: Colors.deepOrange[600],
+                ),
+                _ActionButton(
+                  label: '🔍 Data Integrity',
+                  onPressed: onTestDataIntegrity,
+                  backgroundColor: Colors.deepPurple[600],
+                ),
+                _ActionButton(
+                  label: '⚡ Performance Testing',
+                  onPressed: onTestPerformance,
+                  backgroundColor: Colors.amber[700],
                 ),
               ],
             ),

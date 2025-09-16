@@ -7,6 +7,10 @@ import 'services/test_operations_service.dart';
 import 'services/test_queue_operations_service.dart';
 import 'services/test_auth_lifecycle_service.dart';
 import 'services/test_state_management_service.dart';
+import 'services/test_token_management_service.dart';
+import 'services/test_network_connection_service.dart';
+import 'services/test_data_integrity_service.dart';
+import 'services/test_performance_service.dart';
 import 'widgets/status_display.dart';
 import 'widgets/test_action_buttons.dart';
 import 'widgets/test_results_list.dart';
@@ -30,6 +34,10 @@ class _SupabaseTestPageRefactoredState
   late final TestQueueOperationsService _queueTestService;
   late final TestAuthLifecycleService _authLifecycleTestService;
   late final TestStateManagementService _stateManagementTestService;
+  late final TestTokenManagementService _tokenManagementTestService;
+  late final TestNetworkConnectionService _networkTestService;
+  late final TestDataIntegrityService _dataIntegrityTestService;
+  late final TestPerformanceService _performanceTestService;
 
   // Event system state
   String _lastEventMessage = 'No events yet';
@@ -51,6 +59,10 @@ class _SupabaseTestPageRefactoredState
     _queueTestService = TestQueueOperationsService();
     _authLifecycleTestService = TestAuthLifecycleService();
     _stateManagementTestService = TestStateManagementService();
+    _tokenManagementTestService = TestTokenManagementService();
+    _networkTestService = TestNetworkConnectionService();
+    _dataIntegrityTestService = TestDataIntegrityService(null);
+    _performanceTestService = TestPerformanceService(_resultsManager);
 
     // Listen to results manager changes to update UI
     _resultsManager.addListener(_onResultsChanged);
@@ -150,6 +162,7 @@ class _SupabaseTestPageRefactoredState
     _resultsManager.dispose();
     _testService.cleanup();
     _stateManagementTestService.dispose();
+    _tokenManagementTestService.dispose();
     _eventSubscription?.cancel();
     super.dispose();
   }
@@ -253,6 +266,10 @@ class _SupabaseTestPageRefactoredState
               onTestQueueOperations: _testQueueOperations,
               onTestAuthLifecycle: _testAuthLifecycle,
               onTestStateManagement: _testStateManagement,
+              onTestTokenManagement: _testTokenManagement,
+              onTestNetworkConnection: _testNetworkConnection,
+              onTestDataIntegrity: _testDataIntegrity,
+              onTestPerformance: _testPerformance,
               onClearResults: _clearResults,
             ),
           ),
@@ -350,6 +367,47 @@ class _SupabaseTestPageRefactoredState
 
   Future<void> _testStateManagement() async {
     await _stateManagementTestService.runAllStateManagementTests();
+  }
+
+  Future<void> _testTokenManagement() async {
+    await _tokenManagementTestService.runAllTests();
+  }
+
+  Future<void> _testNetworkConnection() async {
+    try {
+      // Ensure sync manager is available
+      if (_testService.syncManager == null) {
+        print('❌ Network connection testing requires initialized sync manager');
+        return;
+      }
+
+      await _networkTestService.initialize(_testService.syncManager!);
+      await _networkTestService.runAllNetworkTests();
+    } catch (e) {
+      print('❌ Failed to run network connection tests: $e');
+    }
+  }
+
+  Future<void> _testDataIntegrity() async {
+    try {
+      // Run data integrity tests
+      print('🔍 Starting Data Integrity Testing...');
+      await _dataIntegrityTestService.runAllDataIntegrityTests();
+      print('✅ Data integrity testing completed');
+    } catch (e) {
+      print('❌ Failed to run data integrity tests: $e');
+    }
+  }
+
+  Future<void> _testPerformance() async {
+    try {
+      // Run performance tests
+      print('⚡ Starting Performance Testing...');
+      await _performanceTestService.runAllPerformanceTests();
+      print('✅ Performance testing completed');
+    } catch (e) {
+      print('❌ Failed to run performance tests: $e');
+    }
   }
 
   void _clearResults() {
