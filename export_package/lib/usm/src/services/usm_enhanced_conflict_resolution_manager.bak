@@ -1,0 +1,715 @@
+// lib/src/services/usm_enhanced_conflict_resolution_manager.dart
+
+import 'dart:async';
+
+import '../config/usm_sync_enums.dart';
+import 'usm_enhanced_conflict_resolver.dart';
+import 'usm_conflict_history_service.dart';
+import 'usm_custom_merge_strategies.dart';
+import 'usm_interactive_conflict_ui.dart';
+
+/// Enhanced conflict resolver with intelligent merge strategies
+class IntelligentConflictResolver extends EnhancedConflictResolver {
+  final Map<String, CustomMergeStrategy> _mergeStrategies = {};
+  final Map<String, EnhancedConflictResolutionStrategy> _fieldStrategies = {};
+  final Map<String, EnhancedConflictResolutionStrategy> _collectionStrategies =
+      {};
+  final EnhancedConflictResolutionStrategy _defaultStrategy;
+
+  IntelligentConflictResolver({
+    EnhancedConflictResolutionStrategy defaultStrategy =
+        EnhancedConflictResolutionStrategy.intelligentMerge,
+    Map<String, EnhancedConflictResolutionStrategy> fieldStrategies = const {},
+    Map<String, EnhancedConflictResolutionStrategy> collectionStrategies =
+        const {},
+  }) : _defaultStrategy = defaultStrategy {
+    _fieldStrategies.addAll(fieldStrategies);
+    _collectionStrategies.addAll(collectionStrategies);
+    _initializeDefaultMergeStrategies();
+  }
+
+  void _initializeDefaultMergeStrategies() {
+    final strategies = [
+      ArrayMergeStrategy(),
+      NumericMergeStrategy(),
+      TextMergeStrategy(),
+      JsonObjectMergeStrategy(),
+      BooleanMergeStrategy(),
+      TimestampMergeStrategy(),
+    ];
+
+    for (final strategy in strategies) {
+      _mergeStrategies[strategy.name] = strategy;
+    }
+  }
+
+  @override
+  String get name => 'IntelligentConflictResolver';
+
+  @override
+  int get priority => 100;
+
+  @override
+  bool canResolve(EnhancedSyncConflict conflict) => true;
+
+  @override
+  double getConfidenceScore(EnhancedSyncConflict conflict) {
+    double totalConfidence = 0.0;
+    int fieldCount = 0;
+
+    for (final entry in conflict.fieldConflicts.entries) {
+      final fieldName = entry.key;
+      final conflictInfo = entry.value;
+
+      final strategy = _getFieldStrategy(
+          fieldName, conflictInfo.localValue, conflictInfo.remoteValue);
+      final confidence = _getStrategyConfidence(strategy, fieldName,
+          conflictInfo.localValue, conflictInfo.remoteValue);
+
+      totalConfidence += confidence;
+      fieldCount++;
+    }
+
+    return fieldCount > 0 ? totalConfidence / fieldCount : 1.0;
+  }
+
+  @override
+  EnhancedSyncConflictResolution resolveConflict(
+      EnhancedSyncConflict conflict) {
+    final strategy =
+        _collectionStrategies[conflict.collection] ?? _defaultStrategy;
+
+    switch (strategy) {
+      case EnhancedConflictResolutionStrategy.localWins:
+        return EnhancedSyncConflictResolution.useLocal(
+            conflict.conflictId, conflict.localData);
+
+      case EnhancedConflictResolutionStrategy.remoteWins:
+        return EnhancedSyncConflictResolution.useRemote(
+            conflict.conflictId, conflict.remoteData);
+
+      case EnhancedConflictResolutionStrategy.intelligentMerge:
+        return _performIntelligentMerge(conflict);
+
+      case EnhancedConflictResolutionStrategy.newestWins:
+        return _resolveByTimestamp(conflict, preferNewer: true);
+
+      case EnhancedConflictResolutionStrategy.oldestWins:
+        return _resolveByTimestamp(conflict, preferNewer: false);
+
+      case EnhancedConflictResolutionStrategy.manual:
+        return EnhancedSyncConflictResolution.requiresManual(
+          conflict.conflictId,
+          conflict,
+          fieldsNeedingReview: conflict.fieldConflicts.keys.toList(),
+          reason: 'Strategy configured for manual resolution',
+        );
+
+      default:
+        return _performIntelligentMerge(conflict);
+    }
+  }
+
+  EnhancedSyncConflictResolution _performIntelligentMerge(
+      EnhancedSyncConflict conflict) {
+    final mergedData = <String, dynamic>{};
+    final fieldStrategies = <String, String>{};
+    final localFields = <String>[];
+    final remoteFields = <String>[];
+    final warnings = <String>[];
+
+    // Start with remote data as base
+    mergedData.addAll(conflict.remoteData);
+    remoteFields.addAll(conflict.remoteData.keys);
+
+    double totalConfidence = 0.0;
+    int fieldCount = 0;
+
+    // Process each conflicted field
+    for (final entry in conflict.fieldConflicts.entries) {
+      final fieldName = entry.key;
+      final conflictInfo = entry.value;
+      final localValue = conflictInfo.localValue;
+      final remoteValue = conflictInfo.remoteValue;
+
+      try {
+        final fieldStrategy =
+            _getFieldStrategy(fieldName, localValue, remoteValue);
+        final resolvedValue = _applyFieldStrategy(fieldStrategy, fieldName,
+            localValue, remoteValue, conflict.localData);
+        final confidence = _getStrategyConfidence(
+            fieldStrategy, fieldName, localValue, remoteValue);
+
+        mergedData[fieldName] = resolvedValue;
+        fieldStrategies[fieldName] = fieldStrategy;
+
+        if (fieldStrategy == 'useLocal') {
+          localFields.add(fieldName);
+          remoteFields.remove(fieldName);
+        }
+
+        totalConfidence += confidence;
+        fieldCount++;
+
+        // Add warnings for low confidence merges
+        if (confidence < 0.6) {
+          warnings.add(
+              'Low confidence merge for field "$fieldName" using strategy "$fieldStrategy"');
+        }
+      } catch (e) {
+        warnings.add('Failed to merge field "$fieldName": $e');
+        // Keep remote value on error
+      }
+    }
+
+    final averageConfidence =
+        fieldCount > 0 ? totalConfidence / fieldCount : 1.0;
+
+    return EnhancedSyncConflictResolution.intelligentMerge(
+      conflict.conflictId,
+      mergedData: mergedData,
+      fieldStrategies: fieldStrategies,
+      localFields: localFields,
+      remoteFields: remoteFields,
+      confidenceScore: averageConfidence,
+      warnings: warnings,
+    );
+  }
+
+  String _getFieldStrategy(
+      String fieldName, dynamic localValue, dynamic remoteValue) {
+    // Check for field-specific strategy
+    final fieldStrategy = _fieldStrategies[fieldName];
+    if (fieldStrategy != null) {
+      return fieldStrategy.name;
+    }
+
+    // Use intelligent strategy selection
+    if (localValue is List && remoteValue is List) {
+      return 'ArrayMerge';
+    } else if (localValue is num && remoteValue is num) {
+      return 'NumericMerge';
+    } else if (localValue is String && remoteValue is String) {
+      return 'TextMerge';
+    } else if (localValue is Map && remoteValue is Map) {
+      return 'JsonObjectMerge';
+    } else if (localValue is bool && remoteValue is bool) {
+      return 'BooleanMerge';
+    } else if (_isTimestampField(fieldName)) {
+      return 'TimestampMerge';
+    } else {
+      return 'useRemote'; // Safe default
+    }
+  }
+
+  dynamic _applyFieldStrategy(String strategy, String fieldName,
+      dynamic localValue, dynamic remoteValue, Map<String, dynamic> context) {
+    switch (strategy) {
+      case 'useLocal':
+        return localValue;
+      case 'useRemote':
+        return remoteValue;
+      default:
+        final mergeStrategy = _mergeStrategies[strategy];
+        if (mergeStrategy != null) {
+          return mergeStrategy.mergeValues(
+              fieldName, localValue, remoteValue, context);
+        }
+        return remoteValue;
+    }
+  }
+
+  double _getStrategyConfidence(String strategy, String fieldName,
+      dynamic localValue, dynamic remoteValue) {
+    switch (strategy) {
+      case 'useLocal':
+      case 'useRemote':
+        return 0.9;
+      default:
+        final mergeStrategy = _mergeStrategies[strategy];
+        return mergeStrategy?.getConfidenceScore(
+                fieldName, localValue, remoteValue) ??
+            0.5;
+    }
+  }
+
+  EnhancedSyncConflictResolution _resolveByTimestamp(
+      EnhancedSyncConflict conflict,
+      {required bool preferNewer}) {
+    final localUpdatedAt = _getTimestamp(conflict.localData, 'updatedAt');
+    final remoteUpdatedAt = _getTimestamp(conflict.remoteData, 'updatedAt');
+
+    if (localUpdatedAt == null && remoteUpdatedAt == null) {
+      // No timestamps, use version numbers
+      if (preferNewer) {
+        return conflict.localVersion >= conflict.remoteVersion
+            ? EnhancedSyncConflictResolution.useLocal(
+                conflict.conflictId, conflict.localData)
+            : EnhancedSyncConflictResolution.useRemote(
+                conflict.conflictId, conflict.remoteData);
+      } else {
+        return conflict.localVersion <= conflict.remoteVersion
+            ? EnhancedSyncConflictResolution.useLocal(
+                conflict.conflictId, conflict.localData)
+            : EnhancedSyncConflictResolution.useRemote(
+                conflict.conflictId, conflict.remoteData);
+      }
+    }
+
+    if (localUpdatedAt == null) {
+      return EnhancedSyncConflictResolution.useRemote(
+          conflict.conflictId, conflict.remoteData);
+    }
+
+    if (remoteUpdatedAt == null) {
+      return EnhancedSyncConflictResolution.useLocal(
+          conflict.conflictId, conflict.localData);
+    }
+
+    if (preferNewer) {
+      return localUpdatedAt.isAfter(remoteUpdatedAt)
+          ? EnhancedSyncConflictResolution.useLocal(
+              conflict.conflictId, conflict.localData)
+          : EnhancedSyncConflictResolution.useRemote(
+              conflict.conflictId, conflict.remoteData);
+    } else {
+      return localUpdatedAt.isBefore(remoteUpdatedAt)
+          ? EnhancedSyncConflictResolution.useLocal(
+              conflict.conflictId, conflict.localData)
+          : EnhancedSyncConflictResolution.useRemote(
+              conflict.conflictId, conflict.remoteData);
+    }
+  }
+
+  DateTime? _getTimestamp(Map<String, dynamic> data, String field) {
+    final value = data[field];
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  bool _isTimestampField(String fieldName) {
+    final name = fieldName.toLowerCase();
+    return name.contains('timestamp') ||
+        name.contains('createdat') ||
+        name.contains('updatedat') ||
+        name.contains('deletedat') ||
+        name.endsWith('at');
+  }
+
+  /// Registers a custom merge strategy
+  void registerMergeStrategy(CustomMergeStrategy strategy) {
+    _mergeStrategies[strategy.name] = strategy;
+  }
+
+  /// Sets field-specific strategy
+  void setFieldStrategy(
+      String fieldName, EnhancedConflictResolutionStrategy strategy) {
+    _fieldStrategies[fieldName] = strategy;
+  }
+
+  /// Sets collection-specific strategy
+  void setCollectionStrategy(
+      String collection, EnhancedConflictResolutionStrategy strategy) {
+    _collectionStrategies[collection] = strategy;
+  }
+}
+
+/// Enhanced conflict resolution manager that coordinates all conflict resolution services
+class EnhancedConflictResolutionManager {
+  final Map<String, EnhancedConflictResolver> _resolvers = {};
+  final ConflictHistoryService _historyService = ConflictHistoryService();
+  final InteractiveConflictUIService _uiService =
+      InteractiveConflictUIService();
+  EnhancedConflictResolver? _defaultResolver;
+
+  final StreamController<EnhancedSyncConflict> _conflictDetectedController =
+      StreamController<EnhancedSyncConflict>.broadcast();
+  final StreamController<EnhancedSyncConflictResolution>
+      _conflictResolvedController =
+      StreamController<EnhancedSyncConflictResolution>.broadcast();
+
+  EnhancedConflictResolutionManager() {
+    _defaultResolver = IntelligentConflictResolver();
+  }
+
+  /// Stream of detected conflicts
+  Stream<EnhancedSyncConflict> get conflictDetected =>
+      _conflictDetectedController.stream;
+
+  /// Stream of resolved conflicts
+  Stream<EnhancedSyncConflictResolution> get conflictResolved =>
+      _conflictResolvedController.stream;
+
+  /// Access to history service
+  ConflictHistoryService get historyService => _historyService;
+
+  /// Access to UI service
+  InteractiveConflictUIService get uiService => _uiService;
+
+  /// Sets the default resolver
+  void setDefaultResolver(EnhancedConflictResolver resolver) {
+    _defaultResolver = resolver;
+  }
+
+  /// Registers a resolver for a specific collection
+  void registerResolver(String collection, EnhancedConflictResolver resolver) {
+    _resolvers[collection] = resolver;
+  }
+
+  /// Registers a custom merge strategy globally
+  void registerMergeStrategy(CustomMergeStrategy strategy) {
+    _uiService.registerMergeStrategy(strategy);
+
+    // Also register with intelligent resolver if it exists
+    if (_defaultResolver is IntelligentConflictResolver) {
+      (_defaultResolver as IntelligentConflictResolver)
+          .registerMergeStrategy(strategy);
+    }
+
+    // Register with all collection-specific resolvers
+    for (final resolver in _resolvers.values) {
+      if (resolver is IntelligentConflictResolver) {
+        resolver.registerMergeStrategy(strategy);
+      }
+    }
+  }
+
+  /// Enhanced conflict detection with detailed field analysis
+  EnhancedSyncConflict? detectConflict({
+    required String entityId,
+    required String collection,
+    required Map<String, dynamic> localData,
+    required Map<String, dynamic> remoteData,
+    required int localVersion,
+    required int remoteVersion,
+    Map<String, dynamic> context = const {},
+    List<String> tags = const [],
+  }) {
+    final fieldConflicts = <String, FieldConflictInfo>{};
+
+    // Get all unique fields
+    final allFields = <String>{
+      ...localData.keys,
+      ...remoteData.keys,
+    };
+
+    for (final field in allFields) {
+      final hasLocal = localData.containsKey(field);
+      final hasRemote = remoteData.containsKey(field);
+
+      if (!hasLocal && hasRemote) {
+        fieldConflicts[field] = FieldConflictInfo(
+          fieldName: field,
+          conflictType: EnhancedConflictType.remoteOnly,
+          localValue: null,
+          remoteValue: remoteData[field],
+          confidenceScore: 0.9,
+          possibleResolutions: ['useRemote', 'ignoreField'],
+        );
+      } else if (hasLocal && !hasRemote) {
+        fieldConflicts[field] = FieldConflictInfo(
+          fieldName: field,
+          conflictType: EnhancedConflictType.localOnly,
+          localValue: localData[field],
+          remoteValue: null,
+          confidenceScore: 0.9,
+          possibleResolutions: ['useLocal', 'ignoreField'],
+        );
+      } else if (hasLocal && hasRemote) {
+        final localValue = localData[field];
+        final remoteValue = remoteData[field];
+
+        if (localValue != remoteValue) {
+          final conflictInfo =
+              _analyzeFieldConflict(field, localValue, remoteValue);
+          fieldConflicts[field] = conflictInfo;
+        }
+      }
+    }
+
+    // Only create conflict if there are actual differences
+    if (fieldConflicts.isEmpty) {
+      return null;
+    }
+
+    final conflict = EnhancedSyncConflict(
+      entityId: entityId,
+      collection: collection,
+      localData: localData,
+      remoteData: remoteData,
+      fieldConflicts: fieldConflicts,
+      detectedAt: DateTime.now(),
+      localVersion: localVersion,
+      remoteVersion: remoteVersion,
+      context: context,
+      tags: tags,
+    );
+
+    _conflictDetectedController.add(conflict);
+    return conflict;
+  }
+
+  FieldConflictInfo _analyzeFieldConflict(
+      String fieldName, dynamic localValue, dynamic remoteValue) {
+    EnhancedConflictType conflictType;
+    double confidenceScore = 1.0;
+    String? semanticReason;
+    List<String> possibleResolutions = ['useLocal', 'useRemote'];
+
+    // Determine conflict type
+    if (localValue.runtimeType != remoteValue.runtimeType) {
+      conflictType = EnhancedConflictType.typeMismatch;
+      semanticReason =
+          'Value types differ: ${localValue.runtimeType} vs ${remoteValue.runtimeType}';
+      confidenceScore = 0.3;
+    } else if (localValue is List && remoteValue is List) {
+      conflictType = EnhancedConflictType.arrayElementConflict;
+      possibleResolutions.add('ArrayMerge');
+      confidenceScore = 0.8;
+    } else if (localValue is Map && remoteValue is Map) {
+      conflictType = EnhancedConflictType.structuralConflict;
+      possibleResolutions.add('JsonObjectMerge');
+      confidenceScore = 0.7;
+    } else if (_isBusinessCriticalField(fieldName)) {
+      conflictType = EnhancedConflictType.semanticConflict;
+      semanticReason = 'Business-critical field requires careful review';
+      confidenceScore = 0.4;
+    } else {
+      conflictType = EnhancedConflictType.valueDifference;
+      confidenceScore = 0.9;
+    }
+
+    // Add type-specific resolution strategies
+    if (localValue is num && remoteValue is num) {
+      possibleResolutions.add('NumericMerge');
+    }
+    if (localValue is String && remoteValue is String) {
+      possibleResolutions.add('TextMerge');
+    }
+    if (localValue is bool && remoteValue is bool) {
+      possibleResolutions.add('BooleanMerge');
+    }
+    if (_isTimestampField(fieldName)) {
+      possibleResolutions.add('TimestampMerge');
+    }
+
+    return FieldConflictInfo(
+      fieldName: fieldName,
+      conflictType: conflictType,
+      localValue: localValue,
+      remoteValue: remoteValue,
+      semanticReason: semanticReason,
+      confidenceScore: confidenceScore,
+      possibleResolutions: possibleResolutions,
+    );
+  }
+
+  bool _isBusinessCriticalField(String fieldName) {
+    final name = fieldName.toLowerCase();
+    return name.contains('id') ||
+        name.contains('deleted') ||
+        name.contains('active') ||
+        name.contains('status') ||
+        name.contains('owner') ||
+        name.contains('permission');
+  }
+
+  bool _isTimestampField(String fieldName) {
+    final name = fieldName.toLowerCase();
+    return name.contains('timestamp') ||
+        name.contains('createdat') ||
+        name.contains('updatedat') ||
+        name.contains('deletedat') ||
+        name.endsWith('at');
+  }
+
+  /// Resolves a conflict using the best available resolver
+  EnhancedSyncConflictResolution resolveConflict(
+      EnhancedSyncConflict conflict) {
+    // Find the best resolver
+    final collectionResolver = _resolvers[conflict.collection];
+    EnhancedConflictResolver? bestResolver;
+
+    if (collectionResolver != null && collectionResolver.canResolve(conflict)) {
+      bestResolver = collectionResolver;
+    } else if (_defaultResolver != null &&
+        _defaultResolver!.canResolve(conflict)) {
+      bestResolver = _defaultResolver;
+    }
+
+    bestResolver ??= IntelligentConflictResolver();
+
+    // Pre-process conflict
+    final processedConflict = bestResolver.preprocessConflict(conflict);
+
+    // Resolve conflict
+    final resolution = bestResolver.resolveConflict(processedConflict);
+
+    // Post-process resolution
+    final finalResolution = bestResolver.postprocessResolution(resolution);
+
+    // Record in history
+    _historyService.recordConflictResolution(conflict, finalResolution);
+
+    _conflictResolvedController.add(finalResolution);
+    return finalResolution;
+  }
+
+  /// Prepares conflict for interactive resolution
+  Map<String, dynamic> prepareConflictForInteractiveResolution(
+      EnhancedSyncConflict conflict) {
+    return _uiService.prepareConflictForUI(conflict);
+  }
+
+  /// Processes user resolution from interactive UI
+  InteractiveResolutionResult processInteractiveResolution(
+    EnhancedSyncConflict conflict,
+    Map<String, dynamic> userChoices,
+    DateTime startTime,
+  ) {
+    return _uiService.processUserResolution(conflict, userChoices, startTime);
+  }
+
+  /// Gets conflict resolution statistics
+  ConflictResolutionStats getStatistics() {
+    return _historyService.generateStats();
+  }
+
+  /// Suggests strategy for a conflict based on history
+  EnhancedConflictResolutionStrategy suggestStrategyForConflict(
+      EnhancedSyncConflict conflict) {
+    return _historyService.suggestStrategyForConflict(conflict);
+  }
+
+  /// Exports conflict history
+  Map<String, dynamic> exportConflictHistory() {
+    return _historyService.exportToJson();
+  }
+
+  /// Imports conflict history
+  void importConflictHistory(Map<String, dynamic> data) {
+    _historyService.importFromJson(data);
+  }
+
+  /// Disposes all resources
+  void dispose() {
+    _conflictDetectedController.close();
+    _conflictResolvedController.close();
+    _historyService.dispose();
+    _uiService.dispose();
+  }
+}
+
+    return FieldConflictInfo(
+      fieldName: fieldName,
+      conflictType: conflictType,
+      localValue: localValue,
+      remoteValue: remoteValue,
+      semanticReason: semanticReason,
+      confidenceScore: confidenceScore,
+      possibleResolutions: possibleResolutions,
+    );
+  }
+
+  bool _isBusinessCriticalField(String fieldName) {
+    final name = fieldName.toLowerCase();
+    return name.contains('id') ||
+        name.contains('deleted') ||
+        name.contains('active') ||
+        name.contains('status') ||
+        name.contains('owner') ||
+        name.contains('permission');
+  }
+
+  bool _isTimestampField(String fieldName) {
+    final name = fieldName.toLowerCase();
+    return name.contains('timestamp') ||
+        name.contains('createdat') ||
+        name.contains('updatedat') ||
+        name.contains('deletedat') ||
+        name.endsWith('at');
+  }
+
+  /// Resolves a conflict using the best available resolver
+  EnhancedSyncConflictResolution resolveConflict(
+      EnhancedSyncConflict conflict) {
+    // Find the best resolver
+    final collectionResolver = _resolvers[conflict.collection];
+    EnhancedConflictResolver? bestResolver;
+
+    if (collectionResolver != null && collectionResolver.canResolve(conflict)) {
+      bestResolver = collectionResolver;
+    } else if (_defaultResolver != null &&
+        _defaultResolver!.canResolve(conflict)) {
+      bestResolver = _defaultResolver;
+    }
+
+    bestResolver ??= IntelligentConflictResolver();
+
+    // Pre-process conflict
+    final processedConflict = bestResolver.preprocessConflict(conflict);
+
+    // Resolve conflict
+    final resolution = bestResolver.resolveConflict(processedConflict);
+
+    // Post-process resolution
+    final finalResolution = bestResolver.postprocessResolution(resolution);
+
+    // Record in history
+    _historyService.recordConflictResolution(conflict, finalResolution);
+
+    _conflictResolvedController.add(finalResolution);
+    return finalResolution;
+  }
+
+  /// Prepares conflict for interactive resolution
+  Map<String, dynamic> prepareConflictForInteractiveResolution(
+      EnhancedSyncConflict conflict) {
+    return _uiService.prepareConflictForUI(conflict);
+  }
+
+  /// Processes user resolution from interactive UI
+  InteractiveResolutionResult processInteractiveResolution(
+    EnhancedSyncConflict conflict,
+    Map<String, dynamic> userChoices,
+    DateTime startTime,
+  ) {
+    return _uiService.processUserResolution(conflict, userChoices, startTime);
+  }
+
+  /// Gets conflict resolution statistics
+  ConflictResolutionStats getStatistics() {
+    return _historyService.generateStats();
+  }
+
+  /// Suggests strategy for a conflict based on history
+  EnhancedConflictResolutionStrategy suggestStrategyForConflict(
+      EnhancedSyncConflict conflict) {
+    return _historyService.suggestStrategyForConflict(conflict);
+  }
+
+  /// Exports conflict history
+  Map<String, dynamic> exportConflictHistory() {
+    return _historyService.exportToJson();
+  }
+
+  /// Imports conflict history
+  void importConflictHistory(Map<String, dynamic> data) {
+    _historyService.importFromJson(data);
+  }
+
+  /// Disposes all resources
+  void dispose() {
+    _conflictDetectedController.close();
+    _conflictResolvedController.close();
+    _historyService.dispose();
+    _uiService.dispose();
+  }
+}

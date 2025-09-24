@@ -1,0 +1,570 @@
+import 'dart:async';
+import '../config/usm_sync_enums.dart';
+
+/// Represents a conflict between local and remote data
+class SyncConflict {
+  final String entityId;
+  final String collection;
+  final Map<String, dynamic> localData;
+  final Map<String, dynamic> remoteData;
+  final Map<String, ConflictType> fieldConflicts;
+  final DateTime detectedAt;
+  final int localVersion;
+  final int remoteVersion;
+  final Map<String, dynamic> metadata;
+
+  SyncConflict({
+    required this.entityId,
+    required this.collection,
+    required this.localData,
+    required this.remoteData,
+    required this.fieldConflicts,
+    required this.detectedAt,
+    required this.localVersion,
+    required this.remoteVersion,
+    this.metadata = const {},
+  });
+
+  /// Get the list of all affected fields with conflicts
+  List<String> get affectedFields => fieldConflicts.keys.toList();
+  
+  @override
+  String toString() {
+    return 'SyncConflict(entityId: $entityId, collection: $collection, fieldConflicts: ${fieldConflicts.length})';
+  }
+}
+
+/// Result of conflict resolution
+class SyncConflictResolution {
+  final Map<String, dynamic> resolvedData;
+  final ConflictResolutionStrategy strategy;
+  final List<String> fieldsUsedFromLocal;
+  final List<String> fieldsUsedFromRemote;
+  final List<String> fieldsRequiringManualReview;
+  final bool requiresUserIntervention;
+  final Map<String, dynamic> metadata;
+
+  SyncConflictResolution({
+    required this.resolvedData,
+    required this.strategy,
+    required this.fieldsUsedFromLocal,
+    required this.fieldsUsedFromRemote,
+    this.fieldsRequiringManualReview = const [],
+    this.requiresUserIntervention = false,
+    this.metadata = const {},
+  });
+
+  /// Factory constructor to create a resolution using only local data
+  factory SyncConflictResolution.useLocal(Map<String, dynamic> localData) {
+    return SyncConflictResolution(
+      resolvedData: Map<String, dynamic>.from(localData),
+      strategy: ConflictResolutionStrategy.localWins,
+      fieldsUsedFromLocal: localData.keys.toList(),
+      fieldsUsedFromRemote: [],
+    );
+  }
+
+  /// Factory constructor to create a resolution using only remote data
+  factory SyncConflictResolution.useRemote(Map<String, dynamic> remoteData) {
+    return SyncConflictResolution(
+      resolvedData: Map<String, dynamic>.from(remoteData),
+      strategy: ConflictResolutionStrategy.remoteWins,
+      fieldsUsedFromLocal: [],
+      fieldsUsedFromRemote: remoteData.keys.toList(),
+    );
+  }
+
+  /// Factory constructor to create a resolution with specific fields from each source
+  factory SyncConflictResolution.useSpecificFields({
+    required Map<String, dynamic> localData,
+    required Map<String, dynamic> remoteData,
+    required List<String> useLocalFields,
+    required List<String> useRemoteFields,
+  }) {
+    final resolvedData = <String, dynamic>{};
+    
+    // Add remote fields first (as base)
+    for (final field in useRemoteFields) {
+      if (remoteData.containsKey(field)) {
+        resolvedData[field] = remoteData[field];
+      }
+    }
+    
+    // Add local fields (potentially overwriting remote)
+    for (final field in useLocalFields) {
+      if (localData.containsKey(field)) {
+        resolvedData[field] = localData[field];
+      }
+    }
+    
+    return SyncConflictResolution(
+      resolvedData: resolvedData,
+      strategy: ConflictResolutionStrategy.intelligentMerge,
+      fieldsUsedFromLocal: useLocalFields,
+      fieldsUsedFromRemote: useRemoteFields,
+    );
+  }
+
+  /// Factory constructor to mark a conflict as requiring manual resolution
+  factory SyncConflictResolution.requiresManual(
+    Map<String, dynamic> partialResolution,
+    List<String> manualFields,
+  ) {
+    return SyncConflictResolution(
+      resolvedData: partialResolution,
+      strategy: ConflictResolutionStrategy.manual,
+      fieldsUsedFromLocal: [],
+      fieldsUsedFromRemote: [],
+      fieldsRequiringManualReview: manualFields,
+      requiresUserIntervention: true,
+    );
+  }
+}
+
+/// Interface for conflict resolution
+abstract class ConflictResolver {
+  /// Resolve a conflict and return a resolution
+  SyncConflictResolution resolveConflict(SyncConflict conflict);
+  
+  /// Check if this resolver can handle a particular conflict
+  bool canResolve(SyncConflict conflict);
+}
+  final List<String> fieldsRequiringManualReview;
+  final bool requiresUserIntervention;
+  final Map<String, dynamic> metadata;
+
+  const SyncConflictResolution({
+    required this.resolvedData,
+    required this.strategy,
+    this.fieldsUsedFromLocal = const [],
+    this.fieldsUsedFromRemote = const [],
+    this.fieldsRequiringManualReview = const [],
+    this.requiresUserIntervention = false,
+    this.metadata = const {},
+  });
+
+  /// Factory for local wins resolution
+  factory SyncConflictResolution.useLocal(Map<String, dynamic> localData) {
+    return SyncConflictResolution(
+      resolvedData: Map.from(localData),
+      strategy: ConflictResolutionStrategy.localWins,
+      fieldsUsedFromLocal: localData.keys.toList(),
+    );
+  }
+
+  /// Factory for remote wins resolution
+  factory SyncConflictResolution.useRemote(Map<String, dynamic> remoteData) {
+    return SyncConflictResolution(
+      resolvedData: Map.from(remoteData),
+      strategy: ConflictResolutionStrategy.remoteWins,
+      fieldsUsedFromRemote: remoteData.keys.toList(),
+    );
+  }
+
+  /// Factory for field-specific resolution
+  factory SyncConflictResolution.useSpecificFields({
+    required Map<String, dynamic> localData,
+    required Map<String, dynamic> remoteData,
+    required List<String> useLocalFields,
+    required List<String> useRemoteFields,
+  }) {
+    final resolvedData = <String, dynamic>{};
+
+    // Start with remote data as base
+    resolvedData.addAll(remoteData);
+
+    // Override with specific local fields
+    for (final field in useLocalFields) {
+      if (localData.containsKey(field)) {
+        resolvedData[field] = localData[field];
+      }
+    }
+
+    return SyncConflictResolution(
+      resolvedData: resolvedData,
+      strategy: ConflictResolutionStrategy.intelligentMerge,
+      fieldsUsedFromLocal: useLocalFields,
+      fieldsUsedFromRemote: useRemoteFields,
+    );
+  }
+
+  /// Factory for manual resolution required
+  factory SyncConflictResolution.requiresManual(
+    SyncConflict conflict, {
+    List<String> fieldsNeedingReview = const [],
+  }) {
+    return SyncConflictResolution(
+      resolvedData: conflict.localData,
+      strategy: ConflictResolutionStrategy.manual,
+      fieldsRequiringManualReview: fieldsNeedingReview,
+      requiresUserIntervention: true,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'SyncConflictResolution(strategy: $strategy, requiresUserIntervention: $requiresUserIntervention)';
+  }
+}
+
+/// Abstract base class for conflict resolvers
+abstract class ConflictResolver {
+  /// Resolves a conflict between local and remote data
+  SyncConflictResolution resolveConflict(SyncConflict conflict);
+
+  /// Returns the name of this resolver
+  String get name;
+
+  /// Returns whether this resolver can handle the given conflict
+  bool canResolve(SyncConflict conflict);
+}
+
+/// Default conflict resolver that uses configurable strategies
+class DefaultConflictResolver implements ConflictResolver {
+  final ConflictResolutionStrategy _defaultStrategy;
+  final Map<String, ConflictResolutionStrategy> _fieldStrategies = {};
+  final Map<String, ConflictResolutionStrategy> _collectionStrategies = {};
+
+  DefaultConflictResolver({
+    ConflictResolutionStrategy defaultStrategy =
+        ConflictResolutionStrategy.remoteWins,
+    Map<String, ConflictResolutionStrategy>? fieldStrategies,
+    Map<String, ConflictResolutionStrategy>? collectionStrategies,
+  }) : _defaultStrategy = defaultStrategy {
+    if (fieldStrategies != null) {
+      _fieldStrategies.addAll(fieldStrategies);
+    }
+    if (collectionStrategies != null) {
+      _collectionStrategies.addAll(collectionStrategies);
+    }
+  }
+
+  @override
+  String get name => 'DefaultConflictResolver';
+
+  @override
+  bool canResolve(SyncConflict conflict) => true;
+
+  @override
+  SyncConflictResolution resolveConflict(SyncConflict conflict) {
+    // Check for collection-specific strategy
+    final collectionStrategy = _collectionStrategies[conflict.collection];
+    final strategy = collectionStrategy ?? _defaultStrategy;
+
+    switch (strategy) {
+      case ConflictResolutionStrategy.localWins:
+        return SyncConflictResolution.useLocal(conflict.localData);
+
+      case ConflictResolutionStrategy.serverWins:
+      case ConflictResolutionStrategy.remoteWins:
+        return SyncConflictResolution.useRemote(conflict.remoteData);
+
+      case ConflictResolutionStrategy.newestWins:
+        return _resolveByTimestamp(conflict, preferNewer: true);
+
+      case ConflictResolutionStrategy.oldestWins:
+        return _resolveByTimestamp(conflict, preferNewer: false);
+
+      case ConflictResolutionStrategy.intelligentMerge:
+        return _intelligentMerge(conflict);
+
+      case ConflictResolutionStrategy.manualResolution:
+      case ConflictResolutionStrategy.manual:
+        return SyncConflictResolution.requiresManual(
+          conflict,
+          fieldsNeedingReview: conflict.fieldConflicts.keys.toList(),
+        );
+
+      case ConflictResolutionStrategy.custom:
+        return _customResolve(conflict);
+        
+      case ConflictResolutionStrategy.timestampWins:
+        return _resolveByTimestamp(conflict, preferNewer: true);
+        
+      case ConflictResolutionStrategy.mergeOrPrompt:
+        try {
+          return _intelligentMerge(conflict);
+        } catch (e) {
+          return SyncConflictResolution.requiresManual(
+            conflict,
+            fieldsNeedingReview: conflict.fieldConflicts.keys.toList(),
+          );
+        }
+      default:
+        return SyncConflictResolution.useRemote(conflict.remoteData);
+    }
+  }
+
+  SyncConflictResolution _resolveByTimestamp(SyncConflict conflict,
+      {required bool preferNewer}) {
+            ? SyncConflictResolution.useLocal(conflict.localData)
+            : SyncConflictResolution.useRemote(conflict.remoteData);
+      } else {
+        return conflict.localVersion <= conflict.remoteVersion
+            ? SyncConflictResolution.useLocal(conflict.localData)
+            : SyncConflictResolution.useRemote(conflict.remoteData);
+      }
+    }
+
+    if (localUpdatedAt == null) {
+      return SyncConflictResolution.useRemote(conflict.remoteData);
+    }
+
+    if (remoteUpdatedAt == null) {
+      return SyncConflictResolution.useLocal(conflict.localData);
+    }
+
+    if (preferNewer) {
+      return localUpdatedAt.isAfter(remoteUpdatedAt)
+          ? SyncConflictResolution.useLocal(conflict.localData)
+          : SyncConflictResolution.useRemote(conflict.remoteData);
+    } else {
+      return localUpdatedAt.isBefore(remoteUpdatedAt)
+          ? SyncConflictResolution.useLocal(conflict.localData)
+          : SyncConflictResolution.useRemote(conflict.remoteData);
+    }
+  }
+
+  SyncConflictResolution _intelligentMerge(SyncConflict conflict) {
+    final resolvedData = <String, dynamic>{};
+    final localFields = <String>[];
+    final remoteFields = <String>[];
+
+    // Start with remote data as base
+    resolvedData.addAll(conflict.remoteData);
+    remoteFields.addAll(conflict.remoteData.keys);
+
+    // Apply field-specific strategies
+    for (final fieldName in conflict.fieldConflicts.keys) {
+      final fieldStrategy = _fieldStrategies[fieldName];
+      
+      if (fieldStrategy != null) {
+        switch (fieldStrategy) {
+          case ConflictResolutionStrategy.localWins:
+            if (conflict.localData.containsKey(fieldName)) {
+              resolvedData[fieldName] = conflict.localData[fieldName];
+              localFields.add(fieldName);
+              remoteFields.remove(fieldName);
+            }
+            break;
+          case ConflictResolutionStrategy.remoteWins:
+          case ConflictResolutionStrategy.serverWins:
+            // Already using remote data as base
+            break;
+          case ConflictResolutionStrategy.newestWins:
+          case ConflictResolutionStrategy.timestampWins:
+            // Use timestamp comparison for this field
+            final localTime = _getTimestamp(conflict.localData, 'updatedAt');
+            final remoteTime = _getTimestamp(conflict.remoteData, 'updatedAt');
+            if (localTime != null &&
+                remoteTime != null &&
+                localTime.isAfter(remoteTime)) {
+              resolvedData[fieldName] = conflict.localData[fieldName];
+              localFields.add(fieldName);
+              remoteFields.remove(fieldName);
+            }
+            break;
+          default:
+            // For other strategies, stick with remote
+            break;
+        }
+      } else if (_shouldPreferLocalField(fieldName, conflict)) {
+        // Apply intelligent logic for fields without specific strategy
+        if (conflict.localData.containsKey(fieldName)) {
+          resolvedData[fieldName] = conflict.localData[fieldName];
+          localFields.add(fieldName);
+          remoteFields.remove(fieldName);
+        }
+      }
+    }
+
+    return SyncConflictResolution(
+      resolvedData: resolvedData,
+      strategy: ConflictResolutionStrategy.intelligentMerge,
+      fieldsUsedFromLocal: localFields,
+      fieldsUsedFromRemote: remoteFields,
+    );
+  }
+
+  /// Determines if local field should be preferred based on field type/name
+  bool _shouldPreferLocalField(String field, SyncConflict conflict) {
+    // Example implementation - override in subclasses for custom logic
+    // For example, prefer local for user preferences
+    return field.contains('preference') || 
+           field.contains('setting') ||
+           field.contains('userConfig');
+  }
+
+  SyncConflictResolution _customResolve(SyncConflict conflict) {
+    // Override this in subclasses for custom resolution logic
+    return SyncConflictResolution.useRemote(conflict.remoteData);
+  }
+
+  /// Helper to parse timestamp string to DateTime
+  DateTime? _getTimestamp(Map<String, dynamic> data, String fieldName) {
+    final timestamp = data[fieldName];
+    if (timestamp is String) {
+      try {
+        return DateTime.parse(timestamp);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Helper to parse generic value to DateTime
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+  DateTime? _getTimestamp(Map<String, dynamic> data, String field) {
+    final value = data[field];
+    return _parseDateTime(value);
+  }
+
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+/// Manager for conflict resolution with pluggable resolvers
+class ConflictResolverManager {
+  final Map<String, ConflictResolver> _resolvers = {};
+  ConflictResolver? _defaultResolver;
+
+  final StreamController<SyncConflict> _conflictDetectedController =
+      StreamController<SyncConflict>.broadcast();
+  final StreamController<SyncConflictResolution> _conflictResolvedController =
+      StreamController<SyncConflictResolution>.broadcast();
+
+  /// Stream of detected conflicts
+  Stream<SyncConflict> get conflictDetected =>
+      _conflictDetectedController.stream;
+
+  /// Stream of resolved conflicts
+  Stream<SyncConflictResolution> get conflictResolved =>
+      _conflictResolvedController.stream;
+
+  /// Sets the default resolver
+  void setDefaultResolver(ConflictResolver resolver) {
+    _defaultResolver = resolver;
+  }
+
+  /// Registers a resolver for a specific collection
+  void registerResolver(String collection, ConflictResolver resolver) {
+    _resolvers[collection] = resolver;
+  }
+
+  /// Removes a resolver for a collection
+  void removeResolver(String collection) {
+    _resolvers.remove(collection);
+  }
+
+  /// Detects conflicts between local and remote data
+  SyncConflict? detectConflict({
+    required String entityId,
+    required String collection,
+    required Map<String, dynamic> localData,
+    required Map<String, dynamic> remoteData,
+    required int localVersion,
+    required int remoteVersion,
+  }) {
+    final fieldConflicts = <String, ConflictType>{};
+
+    // Compare each field
+    final allFields = <String>{
+      ...localData.keys,
+      ...remoteData.keys,
+    };
+
+    for (final field in allFields) {
+      final hasLocal = localData.containsKey(field);
+      final hasRemote = remoteData.containsKey(field);
+
+      if (!hasLocal && hasRemote) {
+        fieldConflicts[field] = ConflictType.remoteOnly;
+      } else if (hasLocal && !hasRemote) {
+        fieldConflicts[field] = ConflictType.localOnly;
+      } else if (hasLocal && hasRemote) {
+        final localValue = localData[field];
+        final remoteValue = remoteData[field];
+
+        if (localValue != remoteValue) {
+          // Check if it's a type mismatch
+          if (localValue.runtimeType != remoteValue.runtimeType) {
+            fieldConflicts[field] = ConflictType.typeMismatch;
+          } else {
+            fieldConflicts[field] = ConflictType.valueDifference;
+          }
+        }
+      }
+    }
+
+    // Only create conflict if there are actual differences
+    if (fieldConflicts.isEmpty) {
+      return null;
+    }
+
+    final conflict = SyncConflict(
+      entityId: entityId,
+      collection: collection,
+      localData: localData,
+      remoteData: remoteData,
+      fieldConflicts: fieldConflicts,
+      detectedAt: DateTime.now(),
+      localVersion: localVersion,
+      remoteVersion: remoteVersion,
+    );
+
+    _conflictDetectedController.add(conflict);
+    return conflict;
+  }
+
+  /// Resolves a conflict using the appropriate resolver
+  SyncConflictResolution resolveConflict(SyncConflict conflict) {
+    // Try collection-specific resolver first
+    final collectionResolver = _resolvers[conflict.collection];
+    ConflictResolver? resolver;
+
+    if (collectionResolver != null && collectionResolver.canResolve(conflict)) {
+      resolver = collectionResolver;
+    } else if (_defaultResolver != null &&
+        _defaultResolver!.canResolve(conflict)) {
+      resolver = _defaultResolver;
+    }
+
+    resolver ??= DefaultConflictResolver(
+      defaultStrategy: ConflictResolutionStrategy.remoteWins,
+    );
+
+    final resolution = resolver.resolveConflict(conflict);
+    _conflictResolvedController.add(resolution);
+    return resolution;
+  }
+
+  /// Dispose method to clean up resources
+  void dispose() {
+    _conflictDetectedController.close();
+    _conflictResolvedController.close();
+  }
+}
